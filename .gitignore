@@ -1,0 +1,8 @@
+# Build artefacts
+/target
+/debug
+
+.vscode/
+.idea/
+*.swp
+.DS_Store

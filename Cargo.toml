@@ -1,0 +1,22 @@
+[package]
+name = "cartgo"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "cartgo"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cartgo"
+path = "src/main.rs"
+
+[dependencies]
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+
+[profile.dev]
+opt-level = 2
