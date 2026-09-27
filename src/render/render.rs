@@ -4,7 +4,7 @@ use crate::render::image_spec::ImageSpec;
 use crate::rng::Pcg32;
 
 const SKY_BLUE: Color = Color::new(0.5, 0.7, 1.0);
-const SPHERE_CENTER: Vec3 = Vec3::new(0.0, 0.0, -1.0);
+pub const SPHERE_CENTER: Vec3 = Vec3::new(0.0, 1.0, 0.0);
 const SPHERE_RADIUS: Real = 0.5;
 
 pub fn render(spec: &ImageSpec, shade: impl Fn(Real, Real, &mut Pcg32) -> Color) -> Vec<Color> {
@@ -32,7 +32,7 @@ pub fn ray_color(ray: &Ray) -> Color {
         return 0.5 * Color::new(n.x() + 1.0, n.y() + 1.0, n.z() + 1.0);
     }
 
-    let a = 0.5 * (ray.direction().normalize().y() + 1.0);
+    let a = 0.5 * (ray.direction().normalize().z() + 1.0);
     Color::WHITE.lerp(SKY_BLUE, a)
 }
 

@@ -10,6 +10,10 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
+    pub const X: Self = Self::new(1.0, 0.0, 0.0);
+    pub const Y: Self = Self::new(0.0, 1.0, 0.0);
+    pub const Z: Self = Self::new(0.0, 0.0, 1.0);
+
     pub const fn new(x: Real, y: Real, z: Real) -> Self {
         Self { e: [x, y, z] }
     }

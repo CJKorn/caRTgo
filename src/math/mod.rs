@@ -1,5 +1,6 @@
 pub mod interval;
 pub mod onb;
+pub mod quat;
 pub mod ray;
 pub mod sampling;
 pub mod vec3;
