@@ -6,3 +6,6 @@
 .idea/
 *.swp
 .DS_Store
+
+*.ppm
+*.png
