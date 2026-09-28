@@ -1,3 +1,4 @@
+use crate::accel::aabb::Aabb;
 use crate::geometry::hittable::{HitRecord, Hittable};
 use crate::material::MaterialId;
 use crate::math::{Real, interval::Interval, ray::Ray, vec3::Vec3};
@@ -42,5 +43,10 @@ impl Hittable for Sphere {
 
         let outward_normal = (ray.at(t) - self.center) / self.radius;
         Some(HitRecord::new(ray, t, outward_normal, self.material))
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        let r = Vec3::new(self.radius, self.radius, self.radius);
+        Aabb::from_points(&[self.center - r, self.center + r])
     }
 }

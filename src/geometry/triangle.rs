@@ -1,3 +1,4 @@
+use crate::accel::aabb::Aabb;
 use crate::geometry::hittable::{HitRecord, Hittable};
 use crate::material::MaterialId;
 use crate::math::{Real, interval::Interval, ray::Ray, vec3::Vec3};
@@ -33,6 +34,10 @@ impl Hittable for Triangle {
             return None;
         }
         Some(HitRecord::new(ray, t, self.normal, self.material))
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        Aabb::from_points(&[self.a, self.a + self.edge1, self.a + self.edge2])
     }
 }
 

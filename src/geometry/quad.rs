@@ -1,3 +1,4 @@
+use crate::accel::aabb::Aabb;
 use crate::geometry::hittable::{HitRecord, Hittable};
 use crate::geometry::triangle::moller_trumbore;
 use crate::material::MaterialId;
@@ -32,5 +33,10 @@ impl Hittable for Quad {
             return None;
         }
         Some(HitRecord::new(ray, t, self.normal, self.material))
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        let c = self.corner;
+        Aabb::from_points(&[c, c + self.u, c + self.v, c + self.u + self.v])
     }
 }

@@ -13,7 +13,7 @@ use cartgo::render::render_settings::RenderSettings;
 use cartgo::render::scene::Scene;
 
 fn main() -> io::Result<()> {
-    let spec = ImageSpec::new(500, 300);
+    let spec = ImageSpec::new(3840, 2160);
     let mut scene = Scene::new();
 
     let ground = scene.add_material(Principled::default());
@@ -63,12 +63,14 @@ fn main() -> io::Result<()> {
     //     0.05,
     // )));
 
+    scene.build();
+
     let mut camera = Camera::new(60.0, 1.0, 0.0, &spec);
     camera.set_position(Vec3::new(0.0, -2.0, 0.6));
     camera.look_at(Vec3::new(0.0, 1.0, 0.0));
 
     let settings = RenderSettings {
-        samples_per_pixel: 100,
+        samples_per_pixel: 1000,
         max_depth: 20,
         seed: 42,
         ..Default::default()

@@ -1,6 +1,6 @@
 use std::fmt;
 use std::iter::Sum;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::Real;
 
@@ -76,6 +76,14 @@ impl fmt::Display for Vec3 {
         f.write_str(", ")?;
         fmt::Display::fmt(&self.e[2], f)?;
         f.write_str(")")
+    }
+}
+
+impl Index<usize> for Vec3 {
+    type Output = Real;
+
+    fn index(&self, axis: usize) -> &Real {
+        &self.e[axis]
     }
 }
 
