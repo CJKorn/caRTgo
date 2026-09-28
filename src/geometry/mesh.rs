@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use crate::accel::aabb::Aabb;
 use crate::accel::bvh::{Bvh, BvhStats};
 use crate::geometry::hittable::{HitRecord, Hittable};
@@ -11,7 +13,7 @@ pub struct Mesh {
     normals: Vec<Vec3>,
     normal_indices: Vec<Option<[u32; 3]>>,
     material: MaterialId,
-    bvh: Bvh,
+    bvh: OnceLock<Bvh>,
 }
 
 impl Mesh {
@@ -43,19 +45,13 @@ impl Mesh {
             }
         }
 
-        let boxes: Vec<Aabb> = kept_triangles
-            .iter()
-            .map(|t| Aabb::from_points(&t.map(|v| vertices[v as usize])))
-            .collect();
-        let bvh = Bvh::build(&boxes);
-
         Self {
             vertices,
             triangles: kept_triangles,
             normals,
             normal_indices: kept_normals,
             material,
-            bvh,
+            bvh: OnceLock::new(),
         }
     }
 
@@ -63,14 +59,25 @@ impl Mesh {
         self.triangles.len()
     }
 
+    fn bvh(&self) -> &Bvh {
+        self.bvh.get_or_init(|| {
+            let boxes: Vec<Aabb> = self
+                .triangles
+                .iter()
+                .map(|t| Aabb::from_points(&t.map(|v| self.vertices[v as usize])))
+                .collect();
+            Bvh::build(&boxes)
+        })
+    }
+
     pub fn bvh_stats(&self) -> BvhStats {
-        self.bvh.stats()
+        self.bvh().stats()
     }
 }
 
 impl Hittable for Mesh {
     fn hit(&self, ray: &Ray, t_range: Interval) -> Option<HitRecord> {
-        self.bvh.hit(ray, t_range, |i, range| {
+        self.bvh().hit(ray, t_range, |i, range| {
             let [a, b, c] = self.triangles[i].map(|v| self.vertices[v as usize]);
             let edge1 = b - a;
             let edge2 = c - a;
@@ -105,6 +112,6 @@ impl Hittable for Mesh {
     }
 
     fn bounding_box(&self) -> Aabb {
-        self.bvh.bounds()
+        self.bvh().bounds()
     }
 }

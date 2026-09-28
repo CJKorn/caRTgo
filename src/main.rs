@@ -59,8 +59,6 @@ fn main() -> io::Result<()> {
     //     0.05,
     // )));
 
-    scene.build();
-
     let mut camera = Camera::new(60.0, 1.0, 0.0, &spec);
     camera.set_position(Vec3::new(0.0, -2.0, 0.6));
     camera.look_at(Vec3::new(0.0, 1.0, 0.0));
