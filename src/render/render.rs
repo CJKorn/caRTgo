@@ -4,7 +4,7 @@ use crate::color::Color;
 use crate::geometry::hittable::HitRecord;
 use crate::math::{EPS, Real, interval::Interval, ray::Ray};
 use crate::render::image_spec::ImageSpec;
-use crate::render::light::Sun;
+use crate::render::light::Light;
 use crate::render::render_settings::RenderSettings;
 use crate::render::scene::Scene;
 use crate::rng::Pcg32;
@@ -54,8 +54,10 @@ pub fn ray_color(ray: &Ray, scene: &Scene, settings: &RenderSettings, rng: &mut 
 
         let Some(hit) = scene.hit(&ray, Interval::new(EPS, Real::INFINITY)) else {
             let mut light = scene.sky().color(ray.direction());
-            if let Some(sun) = scene.sun().filter(|_| !last_diffuse) {
-                light += sun.radiance(ray.direction());
+            if !last_diffuse {
+                for scene_light in scene.lights() {
+                    light += scene_light.radiance(ray.direction());
+                }
             }
             return radiance + clamp(throughput * light);
         };
@@ -63,10 +65,10 @@ pub fn ray_color(ray: &Ray, scene: &Scene, settings: &RenderSettings, rng: &mut 
         let material = scene.material(hit.material);
         radiance += clamp(throughput * material.emission);
 
-        if let Some(sun) = scene.sun() {
-            let albedo = material.diffuse_albedo(&ray, &hit);
-            if albedo != Color::BLACK {
-                radiance += clamp(throughput * albedo * direct_sun(scene, sun, &hit, ray.time(), rng));
+        let albedo = material.diffuse_albedo(&ray, &hit);
+        if albedo != Color::BLACK {
+            for light in scene.lights() {
+                radiance += clamp(throughput * albedo * direct_light(scene, light, &hit, ray.time(), rng));
             }
         }
 
@@ -90,16 +92,18 @@ fn clamp_brightness(c: Color, max: Real) -> Color {
     }
 }
 
-fn direct_sun(scene: &Scene, sun: &Sun, hit: &HitRecord, time: Real, rng: &mut Pcg32) -> Color {
-    let dir = sun.sample_direction(rng.next_real(), rng.next_real());
-    let cos = dir.dot(hit.normal);
+fn direct_light(scene: &Scene, light: &Light, hit: &HitRecord, time: Real, rng: &mut Pcg32) -> Color {
+    let Some(sample) = light.sample(hit.point, rng.next_real(), rng.next_real()) else {
+        return Color::BLACK;
+    };
+    let cos = sample.direction.dot(hit.normal);
     if cos <= 0.0 {
         return Color::BLACK;
     }
 
-    let shadow_ray = Ray::new(hit.point, dir, time);
-    if scene.hit(&shadow_ray, Interval::new(EPS, Real::INFINITY)).is_some() {
+    let shadow_ray = Ray::new(hit.point, sample.direction, time);
+    if scene.hit(&shadow_ray, Interval::new(EPS, sample.distance - EPS)).is_some() {
         return Color::BLACK;
     }
-    sun.irradiance() * (cos / PI)
+    sample.irradiance * (cos / PI)
 }

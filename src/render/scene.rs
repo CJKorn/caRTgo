@@ -1,14 +1,14 @@
 use crate::geometry::hittable::{HitRecord, Hittable};
 use crate::material::{MaterialId, principled::Principled};
 use crate::math::{interval::Interval, ray::Ray};
-use crate::render::light::{Sky, Sun};
+use crate::render::light::{Light, Sky};
 
 #[derive(Default)]
 pub struct Scene {
     objects: Vec<Box<dyn Hittable>>,
     materials: Vec<Principled>,
     sky: Sky,
-    sun: Option<Sun>,
+    lights: Vec<Light>,
 }
 
 impl Scene {
@@ -37,12 +37,12 @@ impl Scene {
         self.sky = sky;
     }
 
-    pub fn sun(&self) -> Option<&Sun> {
-        self.sun.as_ref()
+    pub fn add_light(&mut self, light: Light) {
+        self.lights.push(light);
     }
 
-    pub fn set_sun(&mut self, sun: Option<Sun>) {
-        self.sun = sun;
+    pub fn lights(&self) -> &[Light] {
+        &self.lights
     }
 
     pub fn hit(&self, ray: &Ray, t_range: Interval) -> Option<HitRecord> {

@@ -1,7 +1,44 @@
 use std::f32::consts::TAU;
 
 use crate::color::Color;
-use crate::math::{Real, onb::Onb, sampling::uniform_cone, vec3::Vec3};
+use crate::math::{
+    Real,
+    onb::Onb,
+    sampling::{uniform_cone, uniform_sphere},
+    vec3::Vec3,
+};
+
+pub struct LightSample {
+    pub direction: Vec3,
+    pub distance: Real,
+    pub irradiance: Color,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Light {
+    Sun(Sun),
+    Point(PointLight),
+}
+
+impl Light {
+    pub fn sample(&self, point: Vec3, u: Real, v: Real) -> Option<LightSample> {
+        match self {
+            Light::Sun(sun) => Some(LightSample {
+                direction: sun.sample_direction(u, v),
+                distance: Real::INFINITY,
+                irradiance: sun.irradiance(),
+            }),
+            Light::Point(light) => light.sample(point, u, v),
+        }
+    }
+
+    pub fn radiance(&self, dir: Vec3) -> Color {
+        match self {
+            Light::Sun(sun) => sun.radiance(dir),
+            Light::Point(_) => Color::BLACK,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Sky {
@@ -58,5 +95,37 @@ impl Sun {
         }
         let solid_angle = TAU * (1.0 - self.cos_half_angle);
         self.irradiance / solid_angle
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PointLight {
+    position: Vec3,
+    intensity: Color,
+    radius: Real,
+}
+
+impl PointLight {
+    pub fn new(position: Vec3, color: Color, strength: Real, radius: Real) -> Self {
+        Self {
+            position,
+            intensity: color * strength,
+            radius,
+        }
+    }
+
+    fn sample(&self, point: Vec3, u: Real, v: Real) -> Option<LightSample> {
+        let target = self.position + self.radius * uniform_sphere(u, v);
+        let to_light = target - point;
+        let distance_squared = to_light.length_squared();
+        if distance_squared < 1e-8 {
+            return None;
+        }
+        let distance = distance_squared.sqrt();
+        Some(LightSample {
+            direction: to_light / distance,
+            distance,
+            irradiance: self.intensity / distance_squared,
+        })
     }
 }
