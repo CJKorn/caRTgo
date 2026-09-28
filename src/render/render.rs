@@ -1,11 +1,13 @@
+use std::f32::consts::PI;
+
 use crate::color::Color;
+use crate::geometry::hittable::HitRecord;
 use crate::math::{EPS, Real, interval::Interval, ray::Ray};
 use crate::render::image_spec::ImageSpec;
+use crate::render::light::Sun;
 use crate::render::render_settings::RenderSettings;
 use crate::render::scene::Scene;
 use crate::rng::Pcg32;
-
-const SKY_BLUE: Color = Color::new(0.5, 0.7, 1.0);
 
 pub fn render(
     spec: &ImageSpec,
@@ -38,26 +40,66 @@ pub fn ray_color(ray: &Ray, scene: &Scene, settings: &RenderSettings, rng: &mut 
     let mut ray = *ray;
     let mut throughput = Color::WHITE;
     let mut radiance = Color::BLACK;
+    let mut last_diffuse = false;
 
-    for _ in 0..settings.max_depth {
+    for bounce in 0..settings.max_depth {
+        let clamp = |c: Color| {
+            if bounce == 0 {
+                c
+            }
+            else {
+                clamp_brightness(c, settings.clamp_indirect)
+            }
+        };
+
         let Some(hit) = scene.hit(&ray, Interval::new(EPS, Real::INFINITY)) else {
-            return radiance + throughput * sky(&ray);
+            let mut light = scene.sky().color(ray.direction());
+            if let Some(sun) = scene.sun().filter(|_| !last_diffuse) {
+                light += sun.radiance(ray.direction());
+            }
+            return radiance + clamp(throughput * light);
         };
 
         let material = scene.material(hit.material);
-        radiance += throughput * material.emission;
+        radiance += clamp(throughput * material.emission);
+
+        if let Some(sun) = scene.sun() {
+            let albedo = material.diffuse_albedo(&ray, &hit);
+            if albedo != Color::BLACK {
+                radiance += clamp(throughput * albedo * direct_sun(scene, sun, &hit, ray.time(), rng));
+            }
+        }
 
         let Some(scatter) = material.scatter(&ray, &hit, rng) else {
             return radiance;
         };
         throughput *= scatter.attenuation;
+        last_diffuse = scatter.diffuse;
         ray = scatter.ray;
     }
     radiance
 }
 
-// Should move to scene
-fn sky(ray: &Ray) -> Color {
-    let a = 0.5 * (ray.direction().normalize().z() + 1.0);
-    Color::WHITE.lerp(SKY_BLUE, a)
+fn clamp_brightness(c: Color, max: Real) -> Color {
+    let peak = c.r().max(c.g()).max(c.b());
+    if max > 0.0 && peak > max {
+        c * (max / peak)
+    }
+    else {
+        c
+    }
+}
+
+fn direct_sun(scene: &Scene, sun: &Sun, hit: &HitRecord, time: Real, rng: &mut Pcg32) -> Color {
+    let dir = sun.sample_direction(rng.next_real(), rng.next_real());
+    let cos = dir.dot(hit.normal);
+    if cos <= 0.0 {
+        return Color::BLACK;
+    }
+
+    let shadow_ray = Ray::new(hit.point, dir, time);
+    if scene.hit(&shadow_ray, Interval::new(EPS, Real::INFINITY)).is_some() {
+        return Color::BLACK;
+    }
+    sun.irradiance() * (cos / PI)
 }

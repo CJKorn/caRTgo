@@ -9,6 +9,13 @@ pub fn uniform_sphere(u: Real, v: Real) -> Vec3 {
     Vec3::new(r * cos, r * sin, z)
 }
 
+pub fn uniform_cone(u: Real, v: Real, cos_max: Real) -> Vec3 {
+    let z = 1.0 - u * (1.0 - cos_max);
+    let r = (1.0 - z * z).max(0.0).sqrt();
+    let (sin, cos) = (TAU * v).sin_cos();
+    Vec3::new(r * cos, r * sin, z)
+}
+
 // Shirley-Chiu concentric mapping
 // Needed for blue noise in the future
 pub fn concentric_disk(u: Real, v: Real) -> (Real, Real) {

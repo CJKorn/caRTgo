@@ -32,6 +32,7 @@ impl Default for Principled {
 pub struct Scatter {
     pub ray: Ray,
     pub attenuation: Color,
+    pub diffuse: bool,
 }
 
 impl Principled {
@@ -41,7 +42,7 @@ impl Principled {
 
         if rng.next_real() < self.metallic {
             let reflected = fuzzy(reflect(dir, hit.normal), fuzz, rng);
-            return self.bounce(ray, hit, reflected, self.base_color);
+            return self.bounce(ray, hit, reflected, self.base_color, false);
         }
 
         if rng.next_real() < self.transmission {
@@ -62,26 +63,41 @@ impl Principled {
             return Some(Scatter {
                 ray: Ray::new(hit.point, fuzzy(out, fuzz, rng), ray.time()),
                 attenuation: self.base_color,
+                diffuse: false,
             });
         }
 
         let cos = (-dir).dot(hit.normal).min(1.0);
         if schlick(cos, self.ior) > rng.next_real() {
             let reflected = fuzzy(reflect(dir, hit.normal), fuzz, rng);
-            return self.bounce(ray, hit, reflected, Color::WHITE);
+            return self.bounce(ray, hit, reflected, Color::WHITE, false);
         }
 
         let mut diffuse = hit.normal + uniform_sphere(rng.next_real(), rng.next_real());
         if diffuse.length_squared() < 1e-8 {
             diffuse = hit.normal;
         }
-        self.bounce(ray, hit, diffuse, self.base_color)
+        self.bounce(ray, hit, diffuse, self.base_color, true)
     }
 
-    fn bounce(&self, ray: &Ray, hit: &HitRecord, dir: Vec3, attenuation: Color) -> Option<Scatter> {
+    pub fn diffuse_albedo(&self, ray: &Ray, hit: &HitRecord) -> Color {
+        let cos = (-ray.direction().normalize()).dot(hit.normal).min(1.0);
+        let weight = (1.0 - self.metallic) * (1.0 - self.transmission) * (1.0 - schlick(cos, self.ior));
+        self.base_color * weight
+    }
+
+    fn bounce(
+        &self,
+        ray: &Ray,
+        hit: &HitRecord,
+        dir: Vec3,
+        attenuation: Color,
+        diffuse: bool,
+    ) -> Option<Scatter> {
         (dir.dot(hit.normal) > 0.0).then(|| Scatter {
             ray: Ray::new(hit.point, dir, ray.time()),
             attenuation,
+            diffuse,
         })
     }
 }
