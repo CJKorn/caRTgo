@@ -1,6 +1,7 @@
 pub mod accel;
 pub mod color;
 pub mod geometry;
+pub mod loader;
 pub mod material;
 pub mod math;
 pub mod output;

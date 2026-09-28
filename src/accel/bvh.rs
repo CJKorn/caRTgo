@@ -240,6 +240,10 @@ impl Bvh {
         closest
     }
 
+    pub fn bounds(&self) -> Aabb {
+        self.nodes.first().map_or(Aabb::EMPTY, |root| root.bounds)
+    }
+
     pub fn stats(&self) -> BvhStats {
         let mut stats = BvhStats {
             nodes: self.nodes.len(),

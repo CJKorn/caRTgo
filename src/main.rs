@@ -2,8 +2,9 @@ use std::io;
 
 use cartgo::color::Color;
 use cartgo::geometry::{quad::Quad, sphere::Sphere, triangle::Triangle};
+use cartgo::loader::obj::{Shading, UpAxis, load_obj};
 use cartgo::material::principled::Principled;
-use cartgo::math::vec3::Vec3;
+use cartgo::math::{quat::Quat, vec3::Vec3};
 use cartgo::output::ppm::save_p3;
 use cartgo::render::camera::Camera;
 use cartgo::render::image_spec::ImageSpec;
@@ -13,7 +14,7 @@ use cartgo::render::render_settings::RenderSettings;
 use cartgo::render::scene::Scene;
 
 fn main() -> io::Result<()> {
-    let spec = ImageSpec::new(3840, 2160);
+    let spec = ImageSpec::new(1920, 1080);
     let mut scene = Scene::new();
 
     let ground = scene.add_material(Principled::default());
@@ -42,15 +43,10 @@ fn main() -> io::Result<()> {
         ground,
     ));
     scene.add(Sphere::new(Vec3::new(-1.1, 1.0, 0.0), 0.5, glass));
-    scene.add(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 0.5, red_plastic));
+    let mut bunny = load_obj("assets/models/bunny.obj", UpAxis::NegZ)?;
+    bunny.transform(Vec3::new(0.12, 1.0, -0.74), Quat::IDENTITY, 0.45);
+    scene.add(bunny.into_mesh(red_plastic, Shading::Smooth));
     scene.add(Sphere::new(Vec3::new(1.1, 1.0, 0.0), 0.5, gold));
-    scene.add(Triangle::new(
-        Vec3::new(-0.5, 0.5, 1.0),
-        Vec3::new(0.5, 0.5, 0.5),
-        Vec3::new(0.0, 1.5, 0.5),
-        red_plastic,
-    ));
-
     scene.set_sky(Sky {
         horizon: Color::new(0.35, 0.4, 0.45),
         zenith: Color::new(0.15, 0.25, 0.5),
@@ -70,7 +66,7 @@ fn main() -> io::Result<()> {
     camera.look_at(Vec3::new(0.0, 1.0, 0.0));
 
     let settings = RenderSettings {
-        samples_per_pixel: 1000,
+        samples_per_pixel: 100,
         max_depth: 20,
         seed: 42,
         ..Default::default()
