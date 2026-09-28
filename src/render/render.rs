@@ -1,11 +1,10 @@
 use crate::color::Color;
-use crate::math::{Real, ray::Ray, vec3::Vec3};
+use crate::math::{EPS, Real, interval::Interval, ray::Ray};
 use crate::render::image_spec::ImageSpec;
+use crate::render::scene::Scene;
 use crate::rng::Pcg32;
 
 const SKY_BLUE: Color = Color::new(0.5, 0.7, 1.0);
-pub const SPHERE_CENTER: Vec3 = Vec3::new(0.0, 1.0, 0.0);
-const SPHERE_RADIUS: Real = 0.5;
 
 pub fn render(spec: &ImageSpec, shade: impl Fn(Real, Real, &mut Pcg32) -> Color) -> Vec<Color> {
     let mut pixels = Vec::with_capacity(spec.pixel_count());
@@ -26,32 +25,13 @@ fn pixel_rng(spec: &ImageSpec, x: u32, y: u32) -> Pcg32 {
     Pcg32::new(index.wrapping_mul(0x9E37_79B9_7F4A_7C15), 0)
 }
 
-pub fn ray_color(ray: &Ray) -> Color {
-    if let Some(t) = hit_sphere(SPHERE_CENTER, SPHERE_RADIUS, ray) {
-        let n = (ray.at(t) - SPHERE_CENTER) / SPHERE_RADIUS;
+pub fn ray_color(ray: &Ray, scene: &Scene) -> Color {
+    // Shade by surface normal until materials exist
+    if let Some(hit) = scene.hit(ray, Interval::new(EPS, Real::INFINITY)) {
+        let n = hit.normal;
         return 0.5 * Color::new(n.x() + 1.0, n.y() + 1.0, n.z() + 1.0);
     }
 
     let a = 0.5 * (ray.direction().normalize().z() + 1.0);
     Color::WHITE.lerp(SKY_BLUE, a)
-}
-
-fn hit_sphere(center: Vec3, radius: Real, ray: &Ray) -> Option<Real> {
-    let oc = center - ray.origin();
-    let a = ray.direction().length_squared();
-    let h = ray.direction().dot(oc);
-    let c = oc.length_squared() - radius * radius;
-
-    let discriminant = h * h - a * c;
-    if discriminant < 0.0 {
-        return None;
-    }
-
-    let sqrt_d = discriminant.sqrt();
-    let near = (h - sqrt_d) / a;
-    if near > 0.0 {
-        return Some(near);
-    }
-    let far = (h + sqrt_d) / a;
-    (far > 0.0).then_some(far)
 }
