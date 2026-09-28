@@ -1,4 +1,5 @@
 use crate::geometry::hittable::{HitRecord, Hittable};
+use crate::material::MaterialId;
 use crate::math::{Real, interval::Interval, ray::Ray, vec3::Vec3};
 
 #[derive(Debug, Clone, Copy)]
@@ -7,10 +8,11 @@ pub struct Triangle {
     edge1: Vec3,
     edge2: Vec3,
     normal: Vec3,
+    material: MaterialId,
 }
 
 impl Triangle {
-    pub fn new(a: Vec3, b: Vec3, c: Vec3) -> Self {
+    pub fn new(a: Vec3, b: Vec3, c: Vec3, material: MaterialId) -> Self {
         let edge1 = b - a;
         let edge2 = c - a;
         Self {
@@ -18,6 +20,7 @@ impl Triangle {
             edge1,
             edge2,
             normal: edge1.cross(edge2).normalize(),
+            material,
         }
     }
 }
@@ -29,7 +32,7 @@ impl Hittable for Triangle {
         if u < 0.0 || v < 0.0 || u + v > 1.0 || !t_range.surrounds(t) {
             return None;
         }
-        Some(HitRecord::new(ray, t, self.normal))
+        Some(HitRecord::new(ray, t, self.normal, self.material))
     }
 }
 

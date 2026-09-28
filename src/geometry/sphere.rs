@@ -1,15 +1,21 @@
 use crate::geometry::hittable::{HitRecord, Hittable};
+use crate::material::MaterialId;
 use crate::math::{Real, interval::Interval, ray::Ray, vec3::Vec3};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Sphere {
     center: Vec3,
     radius: Real,
+    material: MaterialId,
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: Real) -> Self {
-        Self { center, radius }
+    pub fn new(center: Vec3, radius: Real, material: MaterialId) -> Self {
+        Self {
+            center,
+            radius,
+            material,
+        }
     }
 }
 
@@ -35,6 +41,6 @@ impl Hittable for Sphere {
         }
 
         let outward_normal = (ray.at(t) - self.center) / self.radius;
-        Some(HitRecord::new(ray, t, outward_normal))
+        Some(HitRecord::new(ray, t, outward_normal, self.material))
     }
 }

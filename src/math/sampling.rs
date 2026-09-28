@@ -1,6 +1,13 @@
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, TAU};
 
-use crate::math::Real;
+use crate::math::{Real, vec3::Vec3};
+
+pub fn uniform_sphere(u: Real, v: Real) -> Vec3 {
+    let z = 1.0 - 2.0 * u;
+    let r = (1.0 - z * z).max(0.0).sqrt();
+    let (sin, cos) = (TAU * v).sin_cos();
+    Vec3::new(r * cos, r * sin, z)
+}
 
 // Shirley-Chiu concentric mapping
 // Needed for blue noise in the future

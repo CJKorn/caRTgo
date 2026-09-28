@@ -1,5 +1,6 @@
 use crate::geometry::hittable::{HitRecord, Hittable};
 use crate::geometry::triangle::moller_trumbore;
+use crate::material::MaterialId;
 use crate::math::{interval::Interval, ray::Ray, vec3::Vec3};
 
 // Parallelogram with corners corner, corner + u, corner + v, corner + u + v.
@@ -9,15 +10,17 @@ pub struct Quad {
     u: Vec3,
     v: Vec3,
     normal: Vec3,
+    material: MaterialId,
 }
 
 impl Quad {
-    pub fn new(corner: Vec3, u: Vec3, v: Vec3) -> Self {
+    pub fn new(corner: Vec3, u: Vec3, v: Vec3, material: MaterialId) -> Self {
         Self {
             corner,
             u,
             v,
             normal: u.cross(v).normalize(),
+            material,
         }
     }
 }
@@ -28,6 +31,6 @@ impl Hittable for Quad {
         if !(0.0..=1.0).contains(&a) || !(0.0..=1.0).contains(&b) || !t_range.surrounds(t) {
             return None;
         }
-        Some(HitRecord::new(ray, t, self.normal))
+        Some(HitRecord::new(ray, t, self.normal, self.material))
     }
 }
