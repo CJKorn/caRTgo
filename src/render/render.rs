@@ -1,4 +1,6 @@
 use std::f32::consts::PI;
+use std::sync::Mutex;
+use std::thread;
 
 use crate::color::Color;
 use crate::geometry::hittable::HitRecord;
@@ -12,28 +14,51 @@ use crate::rng::Pcg32;
 pub fn render(
     spec: &ImageSpec,
     settings: &RenderSettings,
-    shade: impl Fn(Real, Real, &mut Pcg32) -> Color,
+    shade: impl Fn(Real, Real, &mut Pcg32) -> Color + Sync,
+    mut on_pass: impl FnMut(u32),
 ) -> Vec<Color> {
-    let mut pixels = Vec::with_capacity(spec.pixel_count());
-    for y in 0..spec.height() {
-        for x in 0..spec.width() {
-            let mut rng = pixel_rng(spec, settings.seed, x, y);
-
-            let mut sum = Color::BLACK;
-            for _ in 0..settings.samples_per_pixel {
-                let s = (x as Real + rng.next_real()) * spec.inv_width();
-                let t = (y as Real + rng.next_real()) * spec.inv_height();
-                sum += shade(s, t, &mut rng);
-            }
-            pixels.push(sum / settings.samples_per_pixel as Real);
-        }
+    let mut sums = vec![Color::BLACK; spec.pixel_count()];
+    for sample in 0..settings.samples_per_pixel {
+        render_pass(spec, settings.seed, sample, &mut sums, &shade);
+        on_pass(sample + 1);
     }
-    pixels
+    let samples = settings.samples_per_pixel as Real;
+    sums.into_iter().map(|sum| sum / samples).collect()
 }
 
-fn pixel_rng(spec: &ImageSpec, seed: u64, x: u32, y: u32) -> Pcg32 {
-    let index = y as u64 * spec.width() as u64 + x as u64;
-    Pcg32::new(index.wrapping_mul(0x9E37_79B9_7F4A_7C15), seed)
+pub fn render_pass(
+    spec: &ImageSpec,
+    seed: u64,
+    sample: u32,
+    sums: &mut [Color],
+    shade: &(impl Fn(Real, Real, &mut Pcg32) -> Color + Sync),
+) {
+    let width = spec.width() as usize;
+    let rows = Mutex::new(sums.chunks_mut(width).enumerate());
+    let threads = thread::available_parallelism().map_or(1, |n| n.get());
+
+    thread::scope(|scope| {
+        for _ in 0..threads {
+            scope.spawn(|| {
+                loop {
+                    let Some((y, row)) = rows.lock().unwrap().next() else {
+                        break;
+                    };
+                    for (x, sum) in row.iter_mut().enumerate() {
+                        let mut rng = sample_rng(seed, (y * width + x) as u64, sample);
+                        let s = (x as Real + rng.next_real()) * spec.inv_width();
+                        let t = (y as Real + rng.next_real()) * spec.inv_height();
+                        *sum += shade(s, t, &mut rng);
+                    }
+                }
+            });
+        }
+    });
+}
+
+fn sample_rng(seed: u64, pixel: u64, sample: u32) -> Pcg32 {
+    let key = pixel.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ (sample as u64).wrapping_mul(0xC2B2_AE3D_27D4_EB4F);
+    Pcg32::new(key, seed)
 }
 
 pub fn ray_color(ray: &Ray, scene: &Scene, settings: &RenderSettings, rng: &mut Pcg32) -> Color {

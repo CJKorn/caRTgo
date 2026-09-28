@@ -12,6 +12,7 @@ name = "cartgo"
 path = "src/main.rs"
 
 [dependencies]
+indicatif = "0.17"
 
 [profile.release]
 opt-level = 3

@@ -16,6 +16,7 @@ pub enum UpAxis {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Shading {
+    FromFile,
     Flat,
     Smooth,
 }
@@ -40,13 +41,35 @@ impl ObjData {
 
     pub fn into_mesh(self, material: MaterialId, shading: Shading) -> Mesh {
         let has_normals = self.normal_indices.iter().any(Option::is_some);
-        if shading == Shading::Smooth && has_normals {
-            Mesh::with_normals(self.vertices, self.triangles, self.normals, self.normal_indices, material)
-        }
-        else {
-            Mesh::new(self.vertices, self.triangles, material)
+        match shading {
+            Shading::FromFile if has_normals => {
+                Mesh::with_normals(self.vertices, self.triangles, self.normals, self.normal_indices, material)
+            }
+            Shading::FromFile | Shading::Flat => Mesh::new(self.vertices, self.triangles, material),
+            Shading::Smooth => {
+                let normals = vertex_normals(&self.vertices, &self.triangles);
+                let normal_indices = self.triangles.iter().map(|&t| Some(t)).collect();
+                Mesh::with_normals(self.vertices, self.triangles, normals, normal_indices, material)
+            }
         }
     }
+}
+
+fn vertex_normals(vertices: &[Vec3], triangles: &[[u32; 3]]) -> Vec<Vec3> {
+    let mut normals = vec![Vec3::default(); vertices.len()];
+    for triangle in triangles {
+        let [a, b, c] = triangle.map(|v| vertices[v as usize]);
+        let face = (b - a).cross(c - a);
+        for &v in triangle {
+            normals[v as usize] += face;
+        }
+    }
+    for n in &mut normals {
+        if n.length_squared() > 0.0 {
+            *n = n.normalize();
+        }
+    }
+    normals
 }
 
 pub fn load_obj(path: impl AsRef<Path>, up: UpAxis) -> io::Result<ObjData> {

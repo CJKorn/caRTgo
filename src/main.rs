@@ -1,5 +1,7 @@
 use std::io;
 
+use indicatif::{ProgressBar, ProgressStyle};
+
 use cartgo::color::Color;
 use cartgo::geometry::{quad::Quad, sphere::Sphere, triangle::Triangle};
 use cartgo::loader::obj::{Shading, UpAxis, load_obj};
@@ -14,7 +16,7 @@ use cartgo::render::render_settings::RenderSettings;
 use cartgo::render::scene::Scene;
 
 fn main() -> io::Result<()> {
-    let spec = ImageSpec::new(1920, 1080);
+    let spec = ImageSpec::new(3840, 2160);
     let mut scene = Scene::new();
 
     let ground = scene.add_material(Principled::default());
@@ -64,14 +66,22 @@ fn main() -> io::Result<()> {
     camera.look_at(Vec3::new(0.0, 1.0, 0.0));
 
     let settings = RenderSettings {
-        samples_per_pixel: 100,
+        samples_per_pixel: 1000,
         max_depth: 20,
         seed: 42,
         ..Default::default()
     };
-    let pixels = render(&spec, &settings, |s, t, rng| {
-        ray_color(&camera.get_ray(s, t, rng), &scene, &settings, rng)
-    });
+    let progress = ProgressBar::new(settings.samples_per_pixel as u64).with_style(
+        ProgressStyle::with_template("[{elapsed_precise}] {wide_bar} {pos}/{len} passes ({per_sec}, ETA {eta})")
+            .unwrap(),
+    );
+    let pixels = render(
+        &spec,
+        &settings,
+        |s, t, rng| ray_color(&camera.get_ray(s, t, rng), &scene, &settings, rng),
+        |_| progress.inc(1),
+    );
+    progress.finish();
     save_p3("image.ppm", spec.width(), spec.height(), &pixels)?;
     Ok(())
 }
