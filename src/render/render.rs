@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 use std::sync::Mutex;
 use std::thread;
-
+use std::{time::Duration};
 use crate::color::Color;
 use crate::geometry::hittable::HitRecord;
 use crate::math::{EPS, Real, interval::Interval, ray::Ray};
@@ -53,6 +53,7 @@ pub fn render_pass(
                         let s = (x as Real + rng.next_real()) * spec.inv_width();
                         let t = (y as Real + rng.next_real()) * spec.inv_height();
                         *sum += shade(s, t, &mut rng);
+                        // thread::sleep(Duration::from_micros(1));
                     }
                 }
             });

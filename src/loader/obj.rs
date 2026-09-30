@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::geometry::mesh::Mesh;
 use crate::material::MaterialId;
-use crate::math::{Real, quat::Quat, vec3::Vec3};
+use crate::math::{Real, vec3::Vec3};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UpAxis {
@@ -29,16 +29,6 @@ pub struct ObjData {
 }
 
 impl ObjData {
-    // Scale, then rotate, then move, like Blender's object transform
-    pub fn transform(&mut self, position: Vec3, rotation: Quat, scale: Real) {
-        for v in &mut self.vertices {
-            *v = rotation.rotate(*v * scale) + position;
-        }
-        for n in &mut self.normals {
-            *n = rotation.rotate(*n);
-        }
-    }
-
     pub fn into_mesh(self, material: MaterialId, shading: Shading) -> Mesh {
         let has_normals = self.normal_indices.iter().any(Option::is_some);
         match shading {

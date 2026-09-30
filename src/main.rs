@@ -1,9 +1,10 @@
 mod app;
 
 use std::io;
+use std::sync::Arc;
 
 use cartgo::color::Color;
-use cartgo::geometry::{quad::Quad, sphere::Sphere, triangle::Triangle};
+use cartgo::geometry::{instance::Instance, quad::Quad, sphere::Sphere, triangle::Triangle};
 use cartgo::loader::obj::{Shading, UpAxis, load_obj};
 use cartgo::material::principled::Principled;
 use cartgo::math::{quat::Quat, vec3::Vec3};
@@ -16,14 +17,14 @@ use cartgo::render::scene::Scene;
 use crate::app::orbit::Orbit;
 
 fn main() -> io::Result<()> {
-    let spec = ImageSpec::new(1920, 1080);
+    let spec = ImageSpec::new(640, 360);
     let mut scene = Scene::new();
 
     let ground = scene.add_material(Principled::default());
     let glass = scene.add_material(Principled {
         base_color: Color::WHITE,
         roughness: 0.0,
-        transmission: 1.0,
+        transmission: 0.9,
         ..Default::default()
     });
     let red_plastic = scene.add_material(Principled {
@@ -50,11 +51,11 @@ fn main() -> io::Result<()> {
         ground,
     ));
     scene.add(Sphere::new(Vec3::new(-1.1, 1.0, 0.0), 0.5, glass));
-    let mut bunny = load_obj("assets/models/bunny.obj", UpAxis::NegZ)?;
-    bunny.transform(Vec3::new(0.12, 1.0, -0.74), Quat::IDENTITY, 0.45);
-    scene.add(bunny.into_mesh(red_plastic, Shading::Smooth));
+    let bunny = load_obj("assets/models/BlenderTestExplort.obj", UpAxis::NegZ)?;
+    let bunny = Arc::new(bunny.into_mesh(red_plastic, Shading::FromFile));
+    scene.add(Instance::new(bunny, Vec3::new(0.12, 1.0, -0.74), Quat::IDENTITY, 0.45));
     scene.add(Sphere::new(Vec3::new(1.1, 1.0, 0.0), 0.5, gold));
-    // scene.add(Sphere::new(Vec3::new(0.0, 1.0, 1.5), 0.5, argh_bright_light));
+    scene.add(Sphere::new(Vec3::new(0.0, 1.0, 1.5), 0.5, argh_bright_light));
     scene.set_sky(Sky {
         horizon: Color::new(0.35, 0.4, 0.45),
         zenith: Color::new(0.15, 0.25, 0.5),
