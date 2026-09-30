@@ -54,7 +54,7 @@ fn main() -> io::Result<()> {
     bunny.transform(Vec3::new(0.12, 1.0, -0.74), Quat::IDENTITY, 0.45);
     scene.add(bunny.into_mesh(red_plastic, Shading::Smooth));
     scene.add(Sphere::new(Vec3::new(1.1, 1.0, 0.0), 0.5, gold));
-    scene.add(Sphere::new(Vec3::new(0.0, 1.0, 1.5), 0.5, argh_bright_light));
+    // scene.add(Sphere::new(Vec3::new(0.0, 1.0, 1.5), 0.5, argh_bright_light));
     scene.set_sky(Sky {
         horizon: Color::new(0.35, 0.4, 0.45),
         zenith: Color::new(0.15, 0.25, 0.5),

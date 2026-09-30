@@ -42,6 +42,10 @@ impl Camera {
         camera
     }
 
+    pub fn vfov(&self) -> Real {
+        self.vfov
+    }
+
     pub fn set_position(&mut self, position: Vec3) {
         self.position = position;
         self.rebuild();

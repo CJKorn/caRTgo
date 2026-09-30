@@ -93,8 +93,9 @@ fn render_loop(spec: &ImageSpec, settings: &RenderSettings, scene: &Scene, share
     }
 }
 
-// Middle or right drag orbits, WASD moves the target along the ground, Q/E down/up, scroll zooms
+// Right drag orbits, middle drag pans, WASD moves the target along the ground, Q/E down/up, scroll zooms
 fn window_loop(spec: &ImageSpec, mut orbit: Orbit, shared: &Shared) {
+    let vfov = shared.camera.lock().unwrap().vfov();
     let (width, height) = (spec.width() as usize, spec.height() as usize);
     let mut window = Window::new("caRTgo", width, height, WindowOptions::default())
         .unwrap_or_else(|e| panic!("could not open window: {e}"));
@@ -110,12 +111,19 @@ fn window_loop(spec: &ImageSpec, mut orbit: Orbit, shared: &Shared) {
         let mut moved = false;
 
         let mouse = window.get_mouse_pos(MouseMode::Pass);
-        let dragging = window.get_mouse_down(MouseButton::Middle) || window.get_mouse_down(MouseButton::Right);
-        if let (true, Some((x, y)), Some((last_x, last_y))) = (dragging, mouse, last_mouse) {
+        if let (Some((x, y)), Some((last_x, last_y))) = (mouse, last_mouse) {
             let (dx, dy) = (x - last_x, y - last_y);
             if dx != 0.0 || dy != 0.0 {
-                orbit.rotate(-dx * ORBIT_SPEED, dy * ORBIT_SPEED);
-                moved = true;
+                if window.get_mouse_down(MouseButton::Right) {
+                    orbit.rotate(-dx * ORBIT_SPEED, dy * ORBIT_SPEED);
+                    moved = true;
+                }
+                else if window.get_mouse_down(MouseButton::Middle) {
+                    // World units per pixel at the target's distance, so the point under the cursor follows it
+                    let scale = 2.0 * (vfov.to_radians() / 2.0).tan() * orbit.distance / height as Real;
+                    orbit.pan(dx * scale, dy * scale);
+                    moved = true;
+                }
             }
         }
         last_mouse = mouse;

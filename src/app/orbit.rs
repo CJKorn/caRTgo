@@ -35,14 +35,21 @@ impl Orbit {
         Vec3::new(self.yaw.cos(), self.yaw.sin(), 0.0)
     }
 
+    pub fn up(&self) -> Vec3 {
+        self.offset().cross(self.right())
+    }
+
+    pub fn pan(&mut self, dx: Real, dy: Real) {
+        self.target += dy * self.up() - dx * self.right();
+    }
+
     pub fn apply(&self, camera: &mut Camera) {
-        let (sin_pitch, cos_pitch) = self.pitch.sin_cos();
-        let offset = Vec3::new(
-            cos_pitch * self.yaw.sin(),
-            -cos_pitch * self.yaw.cos(),
-            sin_pitch,
-        );
-        camera.set_position(self.target + self.distance * offset);
+        camera.set_position(self.target + self.distance * self.offset());
         camera.look_at(self.target);
+    }
+
+    fn offset(&self) -> Vec3 {
+        let (sin_pitch, cos_pitch) = self.pitch.sin_cos();
+        Vec3::new(cos_pitch * self.yaw.sin(), -cos_pitch * self.yaw.cos(), sin_pitch)
     }
 }
