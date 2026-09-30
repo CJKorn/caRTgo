@@ -8,7 +8,7 @@ use minifb::{Key, MouseButton, MouseMode, Window, WindowOptions};
 
 use cartgo::color::Color;
 use cartgo::math::{Real, vec3::Vec3};
-use cartgo::output::ppm::save_p3;
+use cartgo::output::save;
 use cartgo::render::camera::Camera;
 use cartgo::render::image_spec::ImageSpec;
 use cartgo::render::render::{ray_color, render_pass};
@@ -91,7 +91,7 @@ fn render_loop(spec: &ImageSpec, settings: &RenderSettings, scene: &Scene, share
         if passes == settings.samples_per_pixel {
             progress.finish();
             let image: Vec<Color> = sums.iter().map(|&sum| sum / passes as Real).collect();
-            if let Err(e) = save_p3(output, spec.width(), spec.height(), &image) {
+            if let Err(e) = save(output, spec.width(), spec.height(), &image) {
                 eprintln!("could not save {}: {e}", output.display());
             }
         }

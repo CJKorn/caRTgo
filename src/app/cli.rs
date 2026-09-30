@@ -14,7 +14,7 @@ Options:
   --samples N       samples per pixel (default 1000)
   --depth N         maximum bounces (default 20)
   --seed N          random seed (default 42)
-  -o, --output FILE output image (default image.ppm)
+  -o, --output FILE output image, .png or .ppm (default image.png)
   -h, --help        show this help
 
 The render settings menu is skipped when --width, --height, --samples, --depth, --seed and --output are all given.";

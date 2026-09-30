@@ -6,7 +6,7 @@ use std::process;
 use cartgo::color::Color;
 use cartgo::loader::gltf::load_gltf;
 use cartgo::math::{EPS, Real, interval::Interval, ray::Ray, vec3::Vec3};
-use cartgo::output::ppm::save_p3;
+use cartgo::output::{self, save};
 use cartgo::render::image_spec::ImageSpec;
 use cartgo::render::light::Sky;
 use cartgo::render::render::{ray_color, render};
@@ -86,6 +86,12 @@ fn run(args: cli::Args) -> io::Result<()> {
     if !all_given {
         menu::edit_settings(&mut options)?;
     }
+    if !output::is_supported(&options.output) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("{}: unsupported format, use .png or .ppm", options.output.display()),
+        ));
+    }
 
     let spec = ImageSpec::new(options.width, options.height);
     let camera = scene_camera.to_camera(&spec);
@@ -116,7 +122,7 @@ fn run(args: cli::Args) -> io::Result<()> {
                 |_| progress.inc(1),
             );
             progress.finish();
-            save_p3(&options.output, spec.width(), spec.height(), &pixels)?;
+            save(&options.output, spec.width(), spec.height(), &pixels)?;
             println!("Saved {}", options.output.display());
         }
     }

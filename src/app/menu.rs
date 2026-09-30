@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Input, Select};
 
+use cartgo::output;
+
 use crate::app::cli::Args;
 
 pub struct Settings {
@@ -31,7 +33,7 @@ impl Settings {
             samples: args.samples.unwrap_or(1000),
             depth: args.depth.unwrap_or(20),
             seed: args.seed.unwrap_or(42),
-            output: args.output.clone().unwrap_or_else(|| PathBuf::from("image.ppm")),
+            output: args.output.clone().unwrap_or_else(|| PathBuf::from("image.png")),
         };
         (settings, all_given)
     }
@@ -83,7 +85,16 @@ pub fn edit_settings(settings: &mut Settings) -> io::Result<()> {
             2 => settings.samples = ask_positive(&theme, "Samples per pixel", settings.samples)?,
             3 => settings.depth = ask(&theme, "Max bounces", settings.depth)?,
             4 => settings.seed = ask(&theme, "Seed", settings.seed)?,
-            5 => settings.output = PathBuf::from(ask(&theme, "Output file", settings.output.display().to_string())?),
+            5 => {
+                let output: String = Input::with_theme(&theme)
+                    .with_prompt("Output file")
+                    .default(settings.output.display().to_string())
+                    .validate_with(|path: &String| {
+                        if output::is_supported(path) { Ok(()) } else { Err("use a .png or .ppm file") }
+                    })
+                    .interact_text()?;
+                settings.output = PathBuf::from(output);
+            }
             _ => return Ok(()),
         }
     }
