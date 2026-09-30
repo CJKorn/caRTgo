@@ -240,6 +240,37 @@ impl Bvh {
         closest
     }
 
+    // Any hit inside t_range, stopping at the first one found
+    pub fn occluded(&self, ray: &Ray, t_range: Interval, occludes: impl Fn(usize, Interval) -> bool) -> bool {
+        if self.nodes.is_empty() {
+            return false;
+        }
+
+        let mut stack = [0u32; MAX_DEPTH + 4];
+        let mut stack_len = 1;
+        while stack_len > 0 {
+            stack_len -= 1;
+            let node = &self.nodes[stack[stack_len] as usize];
+            if !node.bounds.hit(ray, t_range) {
+                continue;
+            }
+
+            if node.count > 0 {
+                for &i in &self.indices[node.start as usize..(node.start + node.count) as usize] {
+                    if occludes(i as usize, t_range) {
+                        return true;
+                    }
+                }
+                continue;
+            }
+
+            stack[stack_len] = node.start;
+            stack[stack_len + 1] = node.start + 1;
+            stack_len += 2;
+        }
+        false
+    }
+
     pub fn bounds(&self) -> Aabb {
         self.nodes.first().map_or(Aabb::EMPTY, |root| root.bounds)
     }

@@ -133,7 +133,7 @@ fn direct_light(scene: &Scene, light: &Light, hit: &HitRecord, time: Real, rng: 
     }
 
     let shadow_ray = Ray::new(hit.point, sample.direction, time);
-    if scene.hit(&shadow_ray, Interval::new(EPS, sample.distance - EPS)).is_some() {
+    if scene.occluded(&shadow_ray, Interval::new(EPS, sample.distance - EPS)) {
         return Color::BLACK;
     }
     sample.irradiance * (cos / PI)

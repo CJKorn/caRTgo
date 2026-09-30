@@ -117,6 +117,14 @@ impl Hittable for Mesh {
         })
     }
 
+    fn occluded(&self, ray: &Ray, t_range: Interval) -> bool {
+        self.bvh().occluded(ray, t_range, |i, range| {
+            let [a, b, c] = self.triangles[i].map(|v| self.vertices[v as usize]);
+            moller_trumbore(ray, a, b - a, c - a)
+                .is_some_and(|(u, v, t)| u >= 0.0 && v >= 0.0 && u + v <= 1.0 && range.surrounds(t))
+        })
+    }
+
     fn bounding_box(&self) -> Aabb {
         self.bounds
     }

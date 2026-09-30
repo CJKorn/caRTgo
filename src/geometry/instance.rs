@@ -50,18 +50,20 @@ impl Instance {
         self.material = Some(material);
         self
     }
+
+    // Scaling origin and direction by the same factor keeps t the same in both spaces
+    fn to_local(&self, ray: &Ray) -> Ray {
+        Ray::new(
+            self.inverse_rotation.rotate(ray.origin() - self.position).mul_elem(self.inverse_scale),
+            self.inverse_rotation.rotate(ray.direction()).mul_elem(self.inverse_scale),
+            ray.time(),
+        )
+    }
 }
 
 impl Hittable for Instance {
     fn hit(&self, ray: &Ray, t_range: Interval) -> Option<HitRecord> {
-        // Scaling origin and direction by the same factor keeps t the same in both spaces
-        let local_ray = Ray::new(
-            self.inverse_rotation.rotate(ray.origin() - self.position).mul_elem(self.inverse_scale),
-            self.inverse_rotation.rotate(ray.direction()).mul_elem(self.inverse_scale),
-            ray.time(),
-        );
-
-        let mut hit = self.object.hit(&local_ray, t_range)?;
+        let mut hit = self.object.hit(&self.to_local(ray), t_range)?;
         hit.point = ray.at(hit.t);
         // Inverse transpose of rotate * scale
         hit.normal = self.rotation.rotate(hit.normal.mul_elem(self.inverse_scale)).normalize();
@@ -69,6 +71,10 @@ impl Hittable for Instance {
             hit.material = material;
         }
         Some(hit)
+    }
+
+    fn occluded(&self, ray: &Ray, t_range: Interval) -> bool {
+        self.object.occluded(&self.to_local(ray), t_range)
     }
 
     fn bounding_box(&self) -> Aabb {

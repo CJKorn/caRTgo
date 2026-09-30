@@ -37,5 +37,10 @@ impl HitRecord {
 // Holy hell
 pub trait Hittable: Send + Sync {
     fn hit(&self, ray: &Ray, t_range: Interval) -> Option<HitRecord>;
+
+    fn occluded(&self, ray: &Ray, t_range: Interval) -> bool {
+        self.hit(ray, t_range).is_some()
+    }
+
     fn bounding_box(&self) -> Aabb;
 }

@@ -97,6 +97,10 @@ impl Scene {
         })
     }
 
+    pub fn occluded(&self, ray: &Ray, t_range: Interval) -> bool {
+        self.bvh().occluded(ray, t_range, |i, range| self.objects[i].occluded(ray, range))
+    }
+
     pub fn hit_linear(&self, ray: &Ray, t_range: Interval) -> Option<HitRecord> {
         let mut closest: Option<HitRecord> = None;
         let mut range = t_range;
