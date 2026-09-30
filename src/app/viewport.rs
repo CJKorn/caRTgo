@@ -70,9 +70,7 @@ fn render_loop(spec: &ImageSpec, settings: &RenderSettings, scene: &Scene, share
         }
 
         let shade = |s, t, rng: &mut _| ray_color(&camera.get_ray(s, t, rng), scene, settings, rng);
-        let cancel = || {
-            shared.quit.load(Ordering::Relaxed) || shared.generation.load(Ordering::Relaxed) != generation
-        };
+        let cancel = || shared.quit.load(Ordering::Relaxed);
         if !render_pass(spec, settings.seed, passes, &mut sums, &shade, &cancel) {
             continue;
         }
