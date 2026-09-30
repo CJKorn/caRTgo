@@ -9,6 +9,7 @@ pub struct HitRecord {
     pub t: Real,
     pub front_face: bool,
     pub material: MaterialId,
+    pub object: u32,
 }
 
 impl HitRecord {
@@ -27,6 +28,7 @@ impl HitRecord {
             t,
             front_face,
             material,
+            object: 0,
         }
     }
 }

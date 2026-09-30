@@ -52,6 +52,10 @@ impl Vec3 {
         }
     }
 
+    pub fn mul_elem(self, other: Self) -> Self {
+        Self::new(self.e[0] * other.e[0], self.e[1] * other.e[1], self.e[2] * other.e[2])
+    }
+
     pub fn recip(self) -> Self {
         Self::new(1.0 / self.e[0], 1.0 / self.e[1], 1.0 / self.e[2])
     }

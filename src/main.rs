@@ -53,7 +53,7 @@ fn main() -> io::Result<()> {
     scene.add(Sphere::new(Vec3::new(-1.1, 1.0, 0.0), 0.5, glass));
     let bunny = load_obj("assets/models/BlenderTestExplort.obj", UpAxis::NegZ)?;
     let bunny = Arc::new(bunny.into_mesh(red_plastic, Shading::FromFile));
-    scene.add(Instance::new(bunny, Vec3::new(0.12, 1.0, -0.74), Quat::IDENTITY, 0.45));
+    scene.add(Instance::new(bunny, Vec3::new(0.12, 1.0, -0.74), Quat::IDENTITY, Vec3::new(0.45, 0.45, 0.45)));
     scene.add(Sphere::new(Vec3::new(1.1, 1.0, 0.0), 0.5, gold));
     scene.add(Sphere::new(Vec3::new(0.0, 1.0, 1.5), 0.5, argh_bright_light));
     scene.set_sky(Sky {

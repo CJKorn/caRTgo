@@ -62,15 +62,20 @@ impl Scene {
     }
 
     pub fn hit(&self, ray: &Ray, t_range: Interval) -> Option<HitRecord> {
-        self.bvh().hit(ray, t_range, |i, range| self.objects[i].hit(ray, range))
+        self.bvh().hit(ray, t_range, |i, range| {
+            let mut hit = self.objects[i].hit(ray, range)?;
+            hit.object = i as u32;
+            Some(hit)
+        })
     }
 
     pub fn hit_linear(&self, ray: &Ray, t_range: Interval) -> Option<HitRecord> {
         let mut closest: Option<HitRecord> = None;
         let mut range = t_range;
-        for object in &self.objects {
-            if let Some(hit) = object.hit(ray, range) {
+        for (i, object) in self.objects.iter().enumerate() {
+            if let Some(mut hit) = object.hit(ray, range) {
                 range.max = hit.t;
+                hit.object = i as u32;
                 closest = Some(hit);
             }
         }

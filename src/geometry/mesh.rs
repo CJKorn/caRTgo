@@ -13,6 +13,7 @@ pub struct Mesh {
     normals: Vec<Vec3>,
     normal_indices: Vec<Option<[u32; 3]>>,
     material: MaterialId,
+    bounds: Aabb,
     bvh: OnceLock<Bvh>,
 }
 
@@ -45,12 +46,17 @@ impl Mesh {
             }
         }
 
+        let bounds = kept_triangles.iter().fold(Aabb::EMPTY, |bounds, t| {
+            Aabb::union(bounds, Aabb::from_points(&t.map(|v| vertices[v as usize])))
+        });
+
         Self {
             vertices,
             triangles: kept_triangles,
             normals,
             normal_indices: kept_normals,
             material,
+            bounds,
             bvh: OnceLock::new(),
         }
     }
@@ -112,6 +118,6 @@ impl Hittable for Mesh {
     }
 
     fn bounding_box(&self) -> Aabb {
-        self.bvh().bounds()
+        self.bounds
     }
 }

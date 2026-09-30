@@ -2,20 +2,26 @@ use std::sync::Arc;
 
 use crate::accel::aabb::Aabb;
 use crate::geometry::hittable::{HitRecord, Hittable};
-use crate::math::{Real, interval::Interval, quat::Quat, ray::Ray, vec3::Vec3};
+use crate::material::MaterialId;
+use crate::math::{interval::Interval, quat::Quat, ray::Ray, vec3::Vec3};
 
 pub struct Instance {
     object: Arc<dyn Hittable>,
     position: Vec3,
     rotation: Quat,
-    scale: Real,
+    inverse_rotation: Quat,
+    inverse_scale: Vec3,
+    material: Option<MaterialId>,
     bbox: Aabb,
 }
 
 impl Instance {
     // Scale, then rotate, then move, like Blender's object transform
-    pub fn new(object: Arc<dyn Hittable>, position: Vec3, rotation: Quat, scale: Real) -> Self {
-        assert!(scale > 0.0, "instance scale must be positive");
+    pub fn new(object: Arc<dyn Hittable>, position: Vec3, rotation: Quat, scale: Vec3) -> Self {
+        assert!(
+            scale.x() != 0.0 && scale.y() != 0.0 && scale.z() != 0.0,
+            "instance scale can't be zero"
+        );
         let rotation = rotation.normalize();
 
         let local = object.bounding_box();
@@ -26,33 +32,42 @@ impl Instance {
                 if i & 2 == 0 { y.min } else { y.max },
                 if i & 4 == 0 { z.min } else { z.max },
             );
-            rotation.rotate(corner * scale) + position
+            rotation.rotate(corner.mul_elem(scale)) + position
         });
 
         Self {
             object,
             position,
             rotation,
-            scale,
+            inverse_rotation: rotation.conjugate(),
+            inverse_scale: scale.recip(),
+            material: None,
             bbox: Aabb::from_points(&corners),
         }
+    }
+
+    pub fn with_material(mut self, material: MaterialId) -> Self {
+        self.material = Some(material);
+        self
     }
 }
 
 impl Hittable for Instance {
     fn hit(&self, ray: &Ray, t_range: Interval) -> Option<HitRecord> {
         // Scaling origin and direction by the same factor keeps t the same in both spaces
-        let inverse = self.rotation.conjugate();
         let local_ray = Ray::new(
-            inverse.rotate(ray.origin() - self.position) / self.scale,
-            inverse.rotate(ray.direction()) / self.scale,
+            self.inverse_rotation.rotate(ray.origin() - self.position).mul_elem(self.inverse_scale),
+            self.inverse_rotation.rotate(ray.direction()).mul_elem(self.inverse_scale),
             ray.time(),
         );
 
         let mut hit = self.object.hit(&local_ray, t_range)?;
         hit.point = ray.at(hit.t);
-        // Uniform scale :(
-        hit.normal = self.rotation.rotate(hit.normal);
+        // Inverse transpose of rotate * scale
+        hit.normal = self.rotation.rotate(hit.normal.mul_elem(self.inverse_scale)).normalize();
+        if let Some(material) = self.material {
+            hit.material = material;
+        }
         Some(hit)
     }
 
