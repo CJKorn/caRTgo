@@ -1,10 +1,9 @@
 mod app;
 
 use std::io;
-use std::sync::Arc;
 
 use cartgo::color::Color;
-use cartgo::geometry::{instance::Instance, quad::Quad, sphere::Sphere, triangle::Triangle};
+use cartgo::geometry::{quad::Quad, sphere::Sphere, triangle::Triangle};
 use cartgo::loader::obj::{Shading, UpAxis, load_obj};
 use cartgo::material::principled::Principled;
 use cartgo::math::{quat::Quat, vec3::Vec3};
@@ -44,18 +43,23 @@ fn main() -> io::Result<()> {
         ..Default::default()
     });
 
-    scene.add(Quad::new(
-        Vec3::new(-50.0, -50.0, -0.5),
-        Vec3::new(100.0, 0.0, 0.0),
-        Vec3::new(0.0, 100.0, 0.0),
-        ground,
-    ));
+    // scene.add(Quad::new(
+    //     Vec3::new(-50.0, -50.0, -0.5),
+    //     Vec3::new(100.0, 0.0, 0.0),
+    //     Vec3::new(0.0, 100.0, 0.0),
+    //     ground,
+    // ));
     scene.add(Sphere::new(Vec3::new(-1.1, 1.0, 0.0), 0.5, glass));
-    let bunny = load_obj("assets/models/BlenderTestExplort.obj", UpAxis::NegZ)?;
-    let bunny = Arc::new(bunny.into_mesh(red_plastic, Shading::FromFile));
-    scene.add(Instance::new(bunny, Vec3::new(0.12, 1.0, -0.74), Quat::IDENTITY, Vec3::new(0.45, 0.45, 0.45)));
-    scene.add(Sphere::new(Vec3::new(1.1, 1.0, 0.0), 0.5, gold));
-    scene.add(Sphere::new(Vec3::new(0.0, 1.0, 1.5), 0.5, argh_bright_light));
+    load_obj("assets/models/BlenderTestExplort.obj", UpAxis::Y)?.add_to_scene(
+        &mut scene,
+        Shading::FromFile,
+        red_plastic,
+        Vec3::new(0.12, 1.0, -0.74),
+        Quat::IDENTITY,
+        Vec3::new(0.45, 0.45, 0.45),
+    );
+    // scene.add(Sphere::new(Vec3::new(1.1, 1.0, 0.0), 0.5, gold));
+    // scene.add(Sphere::new(Vec3::new(0.0, 1.0, 1.5), 0.5, argh_bright_light));
     scene.set_sky(Sky {
         horizon: Color::new(0.35, 0.4, 0.45),
         zenith: Color::new(0.15, 0.25, 0.5),
