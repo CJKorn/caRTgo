@@ -12,6 +12,7 @@ name = "cartgo"
 path = "src/main.rs"
 
 [dependencies]
+gltf = { version = "1.4.1", features = ["KHR_lights_punctual", "KHR_materials_transmission", "KHR_materials_emissive_strength", "KHR_materials_ior"] }
 indicatif = "0.17"
 minifb = "0.28.0"
 

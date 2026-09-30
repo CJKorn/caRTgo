@@ -3,8 +3,27 @@ use std::sync::OnceLock;
 use crate::accel::bvh::{Bvh, BvhStats};
 use crate::geometry::hittable::{HitRecord, Hittable};
 use crate::material::{MaterialId, principled::Principled};
-use crate::math::{interval::Interval, ray::Ray};
+use crate::math::{Real, interval::Interval, quat::Quat, ray::Ray, vec3::Vec3};
+use crate::render::camera::Camera;
+use crate::render::image_spec::ImageSpec;
 use crate::render::light::{Light, Sky};
+
+#[derive(Debug, Clone)]
+pub struct SceneCamera {
+    pub name: String,
+    pub position: Vec3,
+    pub rotation: Quat,
+    pub vfov: Real,
+}
+
+impl SceneCamera {
+    pub fn to_camera(&self, spec: &ImageSpec) -> Camera {
+        let mut camera = Camera::new(self.vfov, 1.0, 0.0, spec);
+        camera.set_position(self.position);
+        camera.set_rotation(self.rotation);
+        camera
+    }
+}
 
 #[derive(Default)]
 pub struct Scene {
@@ -12,6 +31,7 @@ pub struct Scene {
     materials: Vec<Principled>,
     sky: Sky,
     lights: Vec<Light>,
+    cameras: Vec<SceneCamera>,
     bvh: OnceLock<Bvh>,
 }
 
@@ -48,6 +68,14 @@ impl Scene {
 
     pub fn lights(&self) -> &[Light] {
         &self.lights
+    }
+
+    pub fn add_camera(&mut self, camera: SceneCamera) {
+        self.cameras.push(camera);
+    }
+
+    pub fn cameras(&self) -> &[SceneCamera] {
+        &self.cameras
     }
 
     fn bvh(&self) -> &Bvh {
