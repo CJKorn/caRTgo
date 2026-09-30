@@ -19,7 +19,7 @@ pub fn render(
 ) -> Vec<Color> {
     let mut sums = vec![Color::BLACK; spec.pixel_count()];
     for sample in 0..settings.samples_per_pixel {
-        render_pass(spec, settings.seed, sample, &mut sums, &shade);
+        render_pass(spec, settings.seed, sample, &mut sums, &shade, &|| false);
         on_pass(sample + 1);
     }
     let samples = settings.samples_per_pixel as Real;
@@ -32,7 +32,8 @@ pub fn render_pass(
     sample: u32,
     sums: &mut [Color],
     shade: &(impl Fn(Real, Real, &mut Pcg32) -> Color + Sync),
-) {
+    cancel: &(impl Fn() -> bool + Sync),
+) -> bool {
     let width = spec.width() as usize;
     let rows = Mutex::new(sums.chunks_mut(width).enumerate());
     let threads = thread::available_parallelism().map_or(1, |n| n.get());
@@ -41,6 +42,9 @@ pub fn render_pass(
         for _ in 0..threads {
             scope.spawn(|| {
                 loop {
+                    if cancel() {
+                        break;
+                    }
                     let Some((y, row)) = rows.lock().unwrap().next() else {
                         break;
                     };
@@ -54,6 +58,7 @@ pub fn render_pass(
             });
         }
     });
+    !cancel()
 }
 
 fn sample_rng(seed: u64, pixel: u64, sample: u32) -> Pcg32 {
