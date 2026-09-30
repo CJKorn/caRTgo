@@ -28,8 +28,8 @@ impl Settings {
             && args.seed.is_some()
             && args.output.is_some();
         let settings = Self {
-            width: args.width.unwrap_or(640),
-            height: args.height.unwrap_or(360),
+            width: args.width.unwrap_or(1920),
+            height: args.height.unwrap_or(1080),
             samples: args.samples.unwrap_or(1000),
             depth: args.depth.unwrap_or(20),
             seed: args.seed.unwrap_or(42),

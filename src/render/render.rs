@@ -97,11 +97,11 @@ pub fn ray_color(ray: &Ray, scene: &Scene, settings: &RenderSettings, rng: &mut 
         radiance += clamp(throughput * material.emission);
 
         let albedo = material.diffuse_albedo(&ray, &hit);
-        if albedo != Color::BLACK {
-            for light in scene.lights() {
-                radiance += clamp(throughput * albedo * direct_light(scene, light, &hit, ray.time(), rng));
-            }
-        }
+        // if albedo != Color::BLACK {
+        //     for light in scene.lights() {
+        //         radiance += clamp(throughput * albedo * direct_light(scene, light, &hit, ray.time(), rng));
+        //     }
+        // }
 
         let Some(scatter) = material.scatter(&ray, &hit, rng) else {
             return radiance;
