@@ -1,9 +1,9 @@
+use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use indicatif::{ProgressBar, ProgressStyle};
 use minifb::{Key, MouseButton, MouseMode, Window, WindowOptions};
 
 use cartgo::color::Color;
@@ -16,6 +16,7 @@ use cartgo::render::render_settings::RenderSettings;
 use cartgo::render::scene::Scene;
 
 use crate::app::orbit::Orbit;
+use crate::app::progress_bar;
 
 const ORBIT_SPEED: Real = 0.005;
 const ZOOM_STEP: Real = 0.9;
@@ -27,7 +28,14 @@ struct Shared {
     quit: AtomicBool,
 }
 
-pub fn run(spec: &ImageSpec, settings: &RenderSettings, scene: &Scene, mut camera: Camera, orbit: Orbit) {
+pub fn run(
+    spec: &ImageSpec,
+    settings: &RenderSettings,
+    scene: &Scene,
+    mut camera: Camera,
+    orbit: Orbit,
+    output: &Path,
+) {
     orbit.apply(&mut camera);
     let shared = Shared {
         camera: Mutex::new(camera),
@@ -37,17 +45,14 @@ pub fn run(spec: &ImageSpec, settings: &RenderSettings, scene: &Scene, mut camer
     };
 
     thread::scope(|scope| {
-        scope.spawn(|| render_loop(spec, settings, scene, &shared));
+        scope.spawn(|| render_loop(spec, settings, scene, &shared, output));
         window_loop(spec, orbit, &shared);
         shared.quit.store(true, Ordering::Relaxed);
     });
 }
 
-fn render_loop(spec: &ImageSpec, settings: &RenderSettings, scene: &Scene, shared: &Shared) {
-    let progress = ProgressBar::new(settings.samples_per_pixel as u64).with_style(
-        ProgressStyle::with_template("[{elapsed_precise}] {wide_bar} {pos}/{len} passes ({per_sec}, ETA {eta})")
-            .unwrap(),
-    );
+fn render_loop(spec: &ImageSpec, settings: &RenderSettings, scene: &Scene, shared: &Shared, output: &Path) {
+    let progress = progress_bar(settings.samples_per_pixel);
     let mut sums = vec![Color::BLACK; spec.pixel_count()];
     let mut pixels = vec![0u32; spec.pixel_count()];
     let mut passes = 0;
@@ -86,8 +91,8 @@ fn render_loop(spec: &ImageSpec, settings: &RenderSettings, scene: &Scene, share
         if passes == settings.samples_per_pixel {
             progress.finish();
             let image: Vec<Color> = sums.iter().map(|&sum| sum / passes as Real).collect();
-            if let Err(e) = save_p3("image.ppm", spec.width(), spec.height(), &image) {
-                eprintln!("could not save image.ppm: {e}");
+            if let Err(e) = save_p3(output, spec.width(), spec.height(), &image) {
+                eprintln!("could not save {}: {e}", output.display());
             }
         }
     }
